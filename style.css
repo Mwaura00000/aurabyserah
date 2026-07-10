@@ -1788,3 +1788,111 @@ img {
 .qty-btn {
   cursor: pointer;
 }
+
+/* Product Actions Grid & Quantity Styles */
+.product-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.qty-select-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #eeded5;
+  border-radius: var(--radius-full);
+  padding: 4px 8px;
+  background-color: var(--bg-primary);
+}
+
+.qty-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-left: 10px;
+  color: var(--text-secondary);
+}
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qty-btn {
+  font-size: 1.1rem;
+  font-weight: 600;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  border: 1px solid #eeded5;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.qty-btn:hover {
+  border-color: var(--color-orange);
+  color: var(--color-crimson);
+}
+
+.qty-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.cta-buttons-row {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 10px;
+}
+
+.cta-buttons-row .btn {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card Mobile Responsive Styles to prevent horizontal overflow */
+@media (max-width: 480px) {
+  .product-info {
+    padding: 18px !important; /* Reduce card padding from 30px to 18px to free horizontal spacing */
+  }
+
+  .cta-buttons-row {
+    grid-template-columns: 1.1fr 0.9fr; /* Keep side by side */
+    gap: 8px;
+  }
+
+  .cta-buttons-row .btn {
+    padding: 8px 10px !important; /* Reduce padding so buttons fit side-by-side */
+    font-size: 0.75rem !important; /* Shrink text slightly */
+    min-height: 40px !important;
+  }
+
+  .qty-select-wrapper {
+    padding: 4px 8px !important;
+  }
+
+  .qty-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 1rem !important;
+  }
+
+  .qty-label {
+    margin-left: 4px !important;
+    font-size: 0.8rem !important;
+  }
+}
