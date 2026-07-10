@@ -481,20 +481,36 @@ function initMobileMenu() {
   const burger = document.querySelector(".mobile-burger");
   const navLinks = document.querySelector(".nav-links");
   const navItems = document.querySelectorAll(".nav-links a");
+  const backdrop = document.getElementById("nav-backdrop");
+
+  const toggleMenu = () => {
+    navLinks.classList.toggle("active");
+    burger.classList.toggle("toggle");
+    if (backdrop) {
+      backdrop.classList.toggle("active");
+    }
+  };
+
+  const closeMenu = () => {
+    navLinks.classList.remove("active");
+    burger.classList.remove("toggle");
+    if (backdrop) {
+      backdrop.classList.remove("active");
+    }
+  };
 
   if (burger && navLinks) {
-    burger.addEventListener("click", () => {
-      navLinks.classList.toggle("active");
-      burger.classList.toggle("toggle");
-    });
+    burger.addEventListener("click", toggleMenu);
 
     // Close menu when clicking link
     navItems.forEach(item => {
-      item.addEventListener("click", () => {
-        navLinks.classList.remove("active");
-        burger.classList.remove("toggle");
-      });
+      item.addEventListener("click", closeMenu);
     });
+
+    // Close menu when clicking backdrop
+    if (backdrop) {
+      backdrop.addEventListener("click", closeMenu);
+    }
   }
 }
 
