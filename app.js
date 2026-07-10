@@ -56,6 +56,7 @@ function initApp() {
   initReviews();
   initScrollAnimations();
   initMobileMenu();
+  initOrderList();
 }
 
 if (document.readyState === "loading") {
@@ -64,7 +65,7 @@ if (document.readyState === "loading") {
   initApp();
 }
 
-// 3. Product Swatch Interactivity
+// 3. Product Swatch Interactivity & Card Quantity
 function initProductSwatches() {
   const productCards = document.querySelectorAll(".product-card");
   
@@ -75,6 +76,66 @@ function initProductSwatches() {
     const scentNotes = card.querySelector(".product-scent-notes");
     const waxIndicator = card.querySelector(".wax-color-dot");
     const orderBtn = card.querySelector(".order-whatsapp-btn");
+    
+    // Card Quantity details
+    const qtyMinus = card.querySelector(".qty-minus");
+    const qtyPlus = card.querySelector(".qty-plus");
+    const qtyValue = card.querySelector(".qty-value");
+    const addToOrderBtn = card.querySelector(".add-to-order-btn");
+    
+    let localQty = 1;
+
+    const triggerLinkUpdate = () => {
+      const scentName = productSelections[productId];
+      const productData = PRODUCTS[productId];
+      updateWhatsAppLink(orderBtn, productData.containerType, scentName, productData.price, localQty);
+    };
+
+    if (qtyMinus && qtyPlus && qtyValue) {
+      qtyMinus.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (localQty > 1) {
+          localQty--;
+          qtyValue.textContent = localQty;
+          triggerLinkUpdate();
+        }
+      });
+
+      qtyPlus.addEventListener("click", (e) => {
+        e.preventDefault();
+        localQty++;
+        qtyValue.textContent = localQty;
+        triggerLinkUpdate();
+      });
+    }
+
+    if (addToOrderBtn) {
+      addToOrderBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const scentName = productSelections[productId];
+        const productData = PRODUCTS[productId];
+        
+        addToOrder(productData.containerType, scentName, localQty, productData.price);
+        
+        // Reset card state
+        localQty = 1;
+        if (qtyValue) qtyValue.textContent = "1";
+        triggerLinkUpdate();
+        
+        // Brief button feedback
+        const originalText = addToOrderBtn.textContent;
+        addToOrderBtn.textContent = "Added! ✓";
+        addToOrderBtn.disabled = true;
+        addToOrderBtn.style.backgroundColor = "var(--color-light-cyan)";
+        addToOrderBtn.style.color = "var(--color-dark-red)";
+        setTimeout(() => {
+          addToOrderBtn.textContent = originalText;
+          addToOrderBtn.disabled = false;
+          addToOrderBtn.style.backgroundColor = "";
+          addToOrderBtn.style.color = "";
+        }, 1000);
+      });
+    }
 
     swatches.forEach(swatch => {
       swatch.addEventListener("click", () => {
@@ -97,9 +158,7 @@ function initProductSwatches() {
             waxIndicator.setAttribute("title", `Wax Color: ${scentName}`);
           }
 
-          // Update WhatsApp link parameters dynamically
-          const productData = PRODUCTS[productId];
-          updateWhatsAppLink(orderBtn, productData.containerType, scentName, productData.price);
+          triggerLinkUpdate();
         }
       });
     });
@@ -113,8 +172,10 @@ function initProductSwatches() {
 }
 
 // 4. WhatsApp Link Building
-function updateWhatsAppLink(buttonElement, containerType, scentName, price) {
-  const message = `Hi Aura by Serah, I would like to order the ${containerType} in the ${scentName} scent for ${price}. Please let me know about delivery!`;
+function updateWhatsAppLink(buttonElement, containerType, scentName, price, quantity = 1) {
+  const qtyPrefix = quantity > 1 ? `${quantity}x ` : "";
+  const suffix = quantity > 1 ? " each" : "";
+  const message = `Hi Aura by Serah, I would like to order ${qtyPrefix}${containerType} in the ${scentName} scent for ${price}${suffix}. Please let me know about delivery!`;
   const encodedMessage = encodeURIComponent(message);
   buttonElement.setAttribute("href", `https://wa.me/${PHONE_NUMBER}?text=${encodedMessage}`);
 }
@@ -436,3 +497,177 @@ function initMobileMenu() {
     });
   }
 }
+
+// 9. Order List / Shopping Cart Management (In-Memory)
+let orderList = [];
+
+function initOrderList() {
+  const pill = document.getElementById("order-summary-pill");
+  const overlay = document.getElementById("order-modal-overlay");
+  const closeBtn = document.getElementById("order-modal-close-btn");
+  const continueBtn = document.getElementById("order-modal-continue-shopping");
+
+  if (pill && overlay) {
+    pill.addEventListener("click", () => {
+      overlay.classList.add("active");
+    });
+  }
+
+  const closeModal = () => {
+    if (overlay) {
+      overlay.classList.remove("active");
+    }
+  };
+
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (continueBtn) continueBtn.addEventListener("click", closeModal);
+  if (overlay) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        closeModal();
+      }
+    });
+  }
+
+  renderOrderSummary();
+}
+
+function addToOrder(containerType, scent, quantity, price) {
+  // Check if combination already exists
+  const existingIndex = orderList.findIndex(item => item.containerType === containerType && item.scent === scent);
+  
+  if (existingIndex > -1) {
+    orderList[existingIndex].quantity += quantity;
+  } else {
+    orderList.push({
+      id: `${containerType}-${scent}`.replace(/\s+/g, '-').toLowerCase(),
+      containerType,
+      scent,
+      quantity,
+      price
+    });
+  }
+  
+  renderOrderSummary();
+}
+
+function updateOrderQuantity(itemId, change) {
+  const index = orderList.findIndex(item => item.id === itemId);
+  if (index > -1) {
+    orderList[index].quantity += change;
+    if (orderList[index].quantity <= 0) {
+      orderList.splice(index, 1);
+    }
+    renderOrderSummary();
+  }
+}
+
+function removeFromOrder(itemId) {
+  const index = orderList.findIndex(item => item.id === itemId);
+  if (index > -1) {
+    orderList.splice(index, 1);
+    renderOrderSummary();
+  }
+}
+
+function renderOrderSummary() {
+  const pill = document.getElementById("order-summary-pill");
+  const pillText = document.getElementById("summary-pill-text");
+  const itemsList = document.getElementById("order-items-list");
+  const totalVal = document.getElementById("order-total-value");
+  const checkoutBtn = document.getElementById("order-modal-whatsapp-checkout");
+  
+  // Calculate totals
+  let totalItemsCount = 0;
+  let grandTotal = 0;
+  
+  orderList.forEach(item => {
+    totalItemsCount += item.quantity;
+    const priceNum = parseInt(item.price.replace(/[^0-9]/g, ''));
+    grandTotal += priceNum * item.quantity;
+  });
+
+  // Update Floating Pill
+  if (pillText) {
+    pillText.textContent = `${totalItemsCount} item${totalItemsCount > 1 ? 's' : ''} — Review Order`;
+  }
+  
+  if (pill) {
+    if (orderList.length > 0) {
+      pill.classList.add("visible");
+    } else {
+      pill.classList.remove("visible");
+    }
+  }
+
+  // Populate Modal Items List
+  if (itemsList) {
+    if (orderList.length === 0) {
+      itemsList.innerHTML = `
+        <div class="empty-order-msg">
+          <p class="empty-order-text">Your list is empty</p>
+          <p>Add some candles to start your order!</p>
+        </div>
+      `;
+    } else {
+      itemsList.innerHTML = "";
+      orderList.forEach(item => {
+        const priceNum = parseInt(item.price.replace(/[^0-9]/g, ''));
+        const lineTotal = priceNum * item.quantity;
+        const suffix = item.quantity > 1 ? " each" : "";
+
+        const row = document.createElement("div");
+        row.className = "order-item-row";
+        row.innerHTML = `
+          <div class="order-item-details">
+            <h4 class="order-item-title">${item.containerType}</h4>
+            <span class="order-item-scent">${item.scent} scent</span>
+            <div class="order-item-math">
+              <div class="order-item-qty-controls">
+                <button type="button" class="order-item-qty-btn" onclick="updateOrderQuantity('${item.id}', -1)">-</button>
+                <span class="order-item-qty-val">${item.quantity}</span>
+                <button type="button" class="order-item-qty-btn" onclick="updateOrderQuantity('${item.id}', 1)">+</button>
+              </div>
+              <span class="order-item-price">${item.price}${suffix}</span>
+            </div>
+          </div>
+          <div class="order-item-right">
+            <span class="order-item-total">Ksh. ${lineTotal.toLocaleString()}</span>
+            <button type="button" class="order-item-remove" onclick="removeFromOrder('${item.id}')">Remove</button>
+          </div>
+        `;
+        itemsList.appendChild(row);
+      });
+    }
+  }
+
+  // Update Modal Grand Total
+  if (totalVal) {
+    totalVal.textContent = `Ksh. ${grandTotal.toLocaleString()}`;
+  }
+
+  // Update WhatsApp Checkout Link
+  if (checkoutBtn) {
+    if (orderList.length === 0) {
+      checkoutBtn.setAttribute("href", "#");
+      checkoutBtn.style.pointerEvents = "none";
+      checkoutBtn.style.opacity = "0.5";
+    } else {
+      checkoutBtn.style.pointerEvents = "auto";
+      checkoutBtn.style.opacity = "1";
+      
+      let message = "Hi Aura by Serah, I would like to order:\n";
+      orderList.forEach(item => {
+        const suffix = item.quantity > 1 ? " each" : "";
+        message += `${item.quantity}x ${item.containerType} - ${item.scent} - ${item.price}${suffix}\n`;
+      });
+      message += `Total: Ksh. ${grandTotal.toLocaleString()}\n\nPlease let me know about delivery!`;
+      
+      checkoutBtn.setAttribute("href", `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`);
+    }
+  }
+}
+
+// Bind functions to window so they are globally accessible from inline onclick events
+window.updateOrderQuantity = updateOrderQuantity;
+window.removeFromOrder = removeFromOrder;
