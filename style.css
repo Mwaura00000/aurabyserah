@@ -55,6 +55,7 @@ html {
   scroll-behavior: smooth;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden; /* Clip off-screen mobile nav drawer — must be on html AND body */
 }
 
 body {
@@ -63,6 +64,8 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
+  /* Clearance for fixed cart pill (approx 52px) + floating WhatsApp btn + margin */
+  padding-bottom: 90px;
 }
 
 h1, h2, h3, h4 {
@@ -253,30 +256,31 @@ img {
 @media (max-width: 992px) {
   .nav-links {
     position: fixed;
-    top: 74px;
-    right: -100%;
-    width: 80%;
-    height: calc(100vh - 74px);
+    top: 0;
+    right: -100%; /* Fully off-screen to the right */
+    width: min(280px, 80vw); /* Cap width so it never affects main layout */
+    height: 100vh;
     background-color: var(--bg-primary);
     flex-direction: column;
     align-items: center;
-    padding: 60px 0;
-    gap: 40px;
-    transition: 0.5s ease-in-out;
-    box-shadow: -10px 10px 30px rgba(0, 0, 0, 0.05);
-    z-index: 99;
+    justify-content: center;
+    padding: 80px 0 60px 0;
+    gap: 36px;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.12);
+    z-index: 200; /* Must be above header (100), backdrop (98), and buttons (95) */
   }
 
   .nav-links.active {
-    right: 0;
+    right: 0; /* Slide in to visible area */
   }
 
   .mobile-burger {
     display: flex;
   }
-  
+
   .nav-cta {
-    display: none; /* Hide top CTA on mobile, keep inside burger if needed or general hero button */
+    display: none;
   }
 
   .mobile-burger.toggle .line1 {
@@ -287,6 +291,14 @@ img {
   }
   .mobile-burger.toggle .line3 {
     transform: rotate(45deg) translate(-5px, -6px);
+  }
+}
+
+/* Ensure main content always fills full width — never squeezed by the drawer */
+@media (max-width: 992px) {
+  body > *:not(.nav-backdrop):not(.order-summary-pill):not(.order-modal-overlay):not(.float-whatsapp) {
+    width: 100% !important;
+    max-width: 100vw !important;
   }
 }
 
